@@ -17,12 +17,16 @@
 
 package org.apache.kafka.controller;
 
+import org.apache.kafka.clients.admin.ConfigEntry;
 import org.apache.kafka.clients.admin.AlterConfigOp.OpType;
+import org.apache.kafka.clients.admin.ConfigEntry.ConfigType;
 import org.apache.kafka.common.config.ConfigDef.ConfigKey;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigResource.Type;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.internals.Topic;
+import org.apache.kafka.common.requests.DescribeConfigsResponse.ConfigSource;
+import org.apache.kafka.common.message.CreateTopicsResponseData.CreatableTopicConfigs;
 import org.apache.kafka.common.metadata.ConfigRecord;
 import org.apache.kafka.common.protocol.Errors;
 import org.apache.kafka.common.requests.ApiError;
@@ -322,6 +326,22 @@ public class ConfigurationControlManager {
             configData.remove(configResource);
         }
         log.info("{}: set configuration {} to {}", configResource, record.name(), record.value());
+    }
+
+    List<CreatableTopicConfigs> topicConfigsAndMetadata(ConfigResource configResource) {
+        Map<String, String> map = configData.get(configResource);
+        List<CreatableTopicConfigs> configList = new ArrayList<>();
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            ConfigDef.Type entryType = configDefs.get(ConfigResource.Type.TOPIC).configKeys().get(entry.getKey()).type();
+            boolean isSensitive = entryType == ConfigDef.Type.PASSWORD;
+            configList.add(new CreatableTopicConfigs().
+                    setName(entry.getKey()).
+                    setValue(entry.getValue()).
+                    setReadOnly(false).
+                    setConfigSource(ConfigSource.UNKNOWN.id()).
+                    setIsSensitive(isSensitive));
+        }
+        return configList;
     }
 
     // VisibleForTesting

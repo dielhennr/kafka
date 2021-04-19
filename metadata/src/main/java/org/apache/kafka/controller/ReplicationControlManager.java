@@ -42,6 +42,7 @@ import org.apache.kafka.common.message.CreateTopicsRequestData;
 import org.apache.kafka.common.message.CreateTopicsRequestData.CreatableReplicaAssignment;
 import org.apache.kafka.common.message.CreateTopicsRequestData.CreatableTopic;
 import org.apache.kafka.common.message.CreateTopicsRequestData.CreatableTopicCollection;
+import org.apache.kafka.common.message.CreateTopicsResponseData.CreatableTopicConfigs;
 import org.apache.kafka.common.message.CreateTopicsResponseData;
 import org.apache.kafka.common.message.CreateTopicsResponseData.CreatableTopicResult;
 import org.apache.kafka.common.message.ElectLeadersRequestData;
@@ -427,13 +428,16 @@ public class ReplicationControlManager {
                 data.topics().add(new CreatableTopicResult().
                     setName(topic.name()).
                     setErrorCode(error.error().code()).
-                    setErrorMessage(error.message()));
+                    setErrorMessage(error.message()).
+                    setConfigs(Collections.emptyList()));
                 resultsBuilder.append(resultsPrefix).append(topic).append(": ").
                     append(error.error()).append(" (").append(error.message()).append(")");
                 resultsPrefix = ", ";
                 continue;
             }
             CreatableTopicResult result = successes.get(topic.name());
+            List<CreatableTopicConfigs> configList = configurationControl.topicConfigsAndMetadata(new ConfigResource(TOPIC, topic.name()));
+            result.setConfigs(configList);
             data.topics().add(result);
             resultsBuilder.append(resultsPrefix).append(topic).append(": ").
                 append("SUCCESS");

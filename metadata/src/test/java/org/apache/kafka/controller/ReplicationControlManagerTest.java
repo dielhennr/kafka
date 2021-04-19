@@ -32,6 +32,8 @@ import org.apache.kafka.common.message.CreateTopicsRequestData;
 import org.apache.kafka.common.message.CreateTopicsRequestData.CreatableReplicaAssignment;
 import org.apache.kafka.common.message.CreateTopicsRequestData.CreatableTopic;
 import org.apache.kafka.common.message.CreateTopicsRequestData.CreatableTopicCollection;
+import org.apache.kafka.common.message.CreateTopicsRequestData.CreateableTopicConfig;
+import org.apache.kafka.common.message.CreateTopicsRequestData.CreateableTopicConfigCollection;
 import org.apache.kafka.common.message.CreateTopicsResponseData;
 import org.apache.kafka.common.message.CreateTopicsResponseData.CreatableTopicResult;
 import org.apache.kafka.common.metadata.PartitionRecord;
@@ -133,8 +135,11 @@ public class ReplicationControlManagerTest {
         ReplicationControlTestContext ctx = new ReplicationControlTestContext();
         ReplicationControlManager replicationControl = ctx.replicationControl;
         CreateTopicsRequestData request = new CreateTopicsRequestData();
+
+        CreateableTopicConfigCollection configs = new CreateableTopicConfigCollection();
+        configs.add(new CreateableTopicConfig().setName("flush.ms").setValue("100"));
         request.topics().add(new CreatableTopic().setName("foo").
-            setNumPartitions(-1).setReplicationFactor((short) -1));
+            setNumPartitions(-1).setReplicationFactor((short) -1).setConfigs(configs));
         ControllerResult<CreateTopicsResponseData> result =
             replicationControl.createTopics(request);
         CreateTopicsResponseData expectedResponse = new CreateTopicsResponseData();
@@ -161,7 +166,7 @@ public class ReplicationControlManagerTest {
         assertEquals(new PartitionControlInfo(new int[] {2, 0, 1},
             new int[] {2, 0, 1}, null, null, 2, 0, 0),
             replicationControl.getPartition(
-                ((TopicRecord) result2.records().get(0).message()).topicId(), 0));
+                ((TopicRecord) result2.records().get(1).message()).topicId(), 0));
         ControllerResult<CreateTopicsResponseData> result3 =
                 replicationControl.createTopics(request);
         CreateTopicsResponseData expectedResponse3 = new CreateTopicsResponseData();
